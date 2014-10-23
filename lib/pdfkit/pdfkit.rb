@@ -138,6 +138,12 @@ class PDFKit
   def successful?(status)
     return true if status.success?
 
+    # wkhtmltopdf will give an exitstatus of 1 if some assets fail but the
+    # PDF still renders successfully.  This was important to us because of
+    # the SSLv3 POODLE vunlerability which caused us to switch to TLS with
+    # SNI, which was causing some assets to fail to load.
+    return true if status.exitstatus == 1
+
     # Some of the codes: https://code.google.com/p/wkhtmltopdf/issues/detail?id=1088
     # returned when assets are missing (404): https://code.google.com/p/wkhtmltopdf/issues/detail?id=548
     return true if status.exitstatus == 2 && @renderer.error_handling?
