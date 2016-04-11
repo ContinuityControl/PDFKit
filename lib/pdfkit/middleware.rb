@@ -18,8 +18,12 @@ class PDFKit
 
       set_request_to_render_as_pdf(env) if render_as_pdf?
       status, headers, response = @app.call(env)
+      headers['X-cc-debug-request-path'] = @request.path
+      headers['X-cc-debug-request-path-ends-in-pdf'] = @request.path.match(%r{\.pdf$})
+      headers['X-cc-debug-rendering-pdf'] = rendering_pdf?  # aka @render_pdf
 
       if rendering_pdf? && headers['Content-Type'] =~ /text\/html|application\/xhtml\+xml/
+        headers['X-cc-debug-made-it-into-the-if'] = true
         body = response.respond_to?(:body) ? response.body : response.join
         body = body.join if body.is_a?(Array)
 
@@ -33,6 +37,8 @@ class PDFKit
 
         body = PDFKit.new(body, options).to_pdf
         response = [body]
+        headers['X-cc-debug-overwrote-the-response-lvar'] = true
+        headers['X-cc-debug-pdfkit-save-pdf-was-true'] = headers['PDFKit-save-pdf']
 
         if headers['PDFKit-save-pdf']
           File.open(headers['PDFKit-save-pdf'], 'wb') { |file| file.write(body) } rescue nil
